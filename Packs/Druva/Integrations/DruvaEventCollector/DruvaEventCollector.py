@@ -126,6 +126,73 @@ class Client(BaseClient):
         if self.max_fetch > MAX_FETCH or self.max_fetch < MIN_FETCH:
             raise DemistoException(f"The maximum number of events per fetch should be between 1 - {MAX_FETCH}")
 
+    def get_all_events(
+        self,
+        product_id: Optional[str] = None,
+        syslog_severity: Optional[str] = None,
+        category: Optional[str] = None,
+        event_type: Optional[str] = None,
+        feature: Optional[str] = None,
+        page_token: Optional[str] = None,
+        page_size: int = 500,
+    ) -> dict:
+        """
+        Gets all events from Druva v3 Event Management API with filtering capabilities.
+        Reference: https://developer.druva.com/reference/cybersecurity-events
+
+        Args:
+            product_id: Filter by product ID (e.g., "4097" for inSync)
+            syslog_severity: Filter by syslog severity level (0-7, e.g., "3" for Error)
+            category: Filter by event category (e.g., "ALERT", "EVENT", "AUDIT")
+            event_type: Filter by event type (e.g., "Alert", "Backup")
+            feature: Filter by feature (e.g., "Alerts And Notifications", "Ransomware Recovery")
+            page_token: Token for pagination to get next page of results
+                        NOTE: When page_token is provided, all other filters are ignored
+                        as the token contains the complete filter state
+            page_size: Number of events per page (max 500)
+
+        Returns:
+            dict: Response containing events and pagination info
+        """
+        params: dict[str, Any] = {}
+
+        # IMPORTANT: When pageToken is provided, it should be used alone
+        # The token already contains all filter information from the previous call
+        if page_token:
+            demisto.debug("Using pageToken for pagination. All other filters will be ignored.")
+            params["pageToken"] = page_token
+            # Note: pageSize is also encoded in the token, so we don't add it
+        else:
+            # Add filter parameters only when not using pageToken
+            if product_id:
+                params["productID"] = product_id
+            if syslog_severity:
+                params["syslogSeverity"] = syslog_severity
+            if category:
+                params["category"] = category
+            if event_type:
+                params["type"] = event_type
+            if feature:
+                params["feature"] = feature
+            if page_size:
+                params["pageSize"] = str(page_size)
+
+            demisto.debug(f"Fetching events with filters: {params}")
+
+        headers = (self._headers or {}) | {"accept": "application/json"}
+
+        try:
+            response = self._http_request(
+                method="GET",
+                url_suffix="/platform/eventmanagement/v3/events",
+                headers=headers,
+                params=params,
+            )
+        except Exception as e:
+            raise DemistoException(f"Error in get-all-events: {e!s}") from e
+
+        return response
+
 
 def test_module(client: Client) -> str:
     """
@@ -191,11 +258,121 @@ def fetch_events(client: Client, last_run: dict[str, str], max_fetch: int) -> tu
         done_fetching = len(events) < MAX_EVENTS_API_CALL
 
         # Save the next_run as a dict with the last_fetch key to be stored
-        next_run = {"tracker": new_tracker}
+        next_run = {"tracker": new_tracker or ""}
         last_run = next_run
         final_events.extend(events)
 
     return final_events, last_run
+
+
+def druva_get_all_events_command(client: Client, args: dict[str, Any]) -> CommandResults:
+    """
+    Retrieves events from Druva v3 Event Management API with filtering capabilities.
+    Reference: https://developer.druva.com/reference/cybersecurity-events
+
+    Args:
+        client: Druva client to use
+        args: Command arguments from Demisto
+            - product_id: Filter by product ID (e.g., "4097" for inSync)
+            - syslog_severity: Filter by syslog severity level (0-7)
+            - category: Filter by event category (e.g., ALERT, AUDIT, EVENT)
+            - type: Filter by event type (e.g., Alert, Backup)
+            - feature: Filter by feature name (e.g., "Alerts And Notifications")
+            - page_token: Token for pagination
+            - page_size: Number of events per page (default 500, max 500)
+            - should_push_events: Whether to push events to XSIAM (true/false)
+
+    Returns:
+        CommandResults: Contains events in human readable format and context data
+    """
+    # Extract arguments
+    product_id = args.get("product_id")
+    syslog_severity = args.get("syslog_severity")
+    category = args.get("category")
+    event_type = args.get("type")
+    feature = args.get("feature")
+    page_token = args.get("page_token")
+    page_size = arg_to_number(args.get("page_size", 500)) or 500
+    should_push_events = argToBoolean(args.get("should_push_events", False))
+
+    # Validate page_size
+    if page_size > 500:
+        raise DemistoException("page_size cannot exceed 500")
+
+    demisto.debug(
+        f"druva-get-all-events called with: product_id={product_id}, "
+        f"syslog_severity={syslog_severity}, category={category}, type={event_type}, "
+        f"feature={feature}, page_size={page_size}"
+    )
+
+    # Call the API
+    response = client.get_all_events(
+        product_id=product_id,
+        syslog_severity=syslog_severity,
+        category=category,
+        event_type=event_type,
+        feature=feature,
+        page_token=page_token,
+        page_size=page_size,
+    )
+
+    events = response.get("events", [])
+    # API returns 'nextPageToken'
+    next_page_token = response.get("nextPageToken", "")
+    
+    # If events list is empty, we've hit the last page (terminate pagination)
+    # API may return nextPageToken even with empty array, but empty array means last page
+    if not events:
+        next_page_token = ""
+        has_more = False
+    else:
+        has_more = bool(next_page_token)
+
+    demisto.debug(f"Retrieved {len(events)} events. hasMore={has_more}, nextPageToken={'present' if next_page_token else 'none'}")
+
+    # Prepare human readable output
+    hr_title = f"{VENDOR} - All Events"
+    if events:
+        # Event structure: id, category, details, feature, globalID, timeStamp, productID, syslogFacility, syslogSeverity, type
+        hr = tableToMarkdown(
+            hr_title,
+            events,
+            headers=["id", "productID", "category", "type", "feature", "syslogSeverity", "timeStamp", "globalID"],
+            removeNull=True,
+        )
+    else:
+        hr = f"### {hr_title}\nNo events found with the specified filters."
+
+    # Add pagination info to human readable
+    if has_more:
+        hr += f"\n\n**Pagination**: More events available. Use `page_token={next_page_token}` to fetch the next page."
+        hr += (
+            "\n\n **Note**: When using `page_token`, do not pass other filter parameters "
+            "as the token already contains all filter information."
+        )
+    else:
+        hr += "\n\n**Pagination**: No more events available."
+
+    # Prepare context output
+    context_output = {
+        "events": events,
+        "nextPageToken": next_page_token,
+        "hasMore": has_more,
+        "totalEvents": len(events),
+    }
+
+    # Push events to XSIAM if requested
+    if should_push_events and events:
+        add_time_to_events_v3(events)
+        send_events_to_xsiam(events, vendor=VENDOR, product=PRODUCT)
+        hr += f"\n\n **{len(events)} events pushed to XSIAM successfully.**"
+
+    return CommandResults(
+        readable_output=hr,
+        outputs_prefix=f"{VENDOR}.AllEvents",
+        outputs_key_field="eventID",
+        outputs=context_output,
+    )
 
 
 """ MAIN FUNCTION """
@@ -213,6 +390,26 @@ def add_time_to_events(events: list[dict]):
         for event in events:
             create_time = arg_to_datetime(event["timestamp"])
             event["_time"] = create_time.strftime(DATE_FORMAT)  # type: ignore[union-attr]
+
+
+def add_time_to_events_v3(events: list[dict]):
+    """
+    Adds the _time key to the events from v3 API.
+    v3 API uses 'timeStamp' field with unix timestamp (integer).
+
+    Args:
+        events: list[dict] - list of v3 events to add the _time key to.
+    Returns:
+        list: The events with the _time key.
+    """
+    if events:
+        for event in events:
+            if "timeStamp" in event:
+                # v3 API: convert unix timestamp to datetime
+                create_time = datetime.fromtimestamp(event["timeStamp"], tz=timezone.utc)
+                event["_time"] = create_time.strftime(DATE_FORMAT)
+            else:
+                demisto.debug(f"v3 Event has no timeStamp field: {event.get('id', 'unknown')}")
 
 
 def main() -> None:  # pragma: no cover
@@ -256,6 +453,9 @@ def main() -> None:  # pragma: no cover
             if argToBoolean(args["should_push_events"]):
                 add_time_to_events(events)
                 send_events_to_xsiam(events, vendor=VENDOR, product=PRODUCT)
+
+        elif command == "druva-get-all-events":
+            return_results(druva_get_all_events_command(client, args))
 
         elif command == "fetch-events":
             events, next_run = fetch_events(client=client, last_run=demisto.getLastRun(), max_fetch=max_fetch)

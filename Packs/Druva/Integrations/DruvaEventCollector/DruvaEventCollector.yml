@@ -50,6 +50,62 @@ script:
     description: Gets events from Druva API in one batch (max 500). If tracker is given, only its successive events will be fetched.
     execution: false
     name: druva-get-events
+  - arguments:
+    - description: Filter by product ID (e.g., "4097" for DCP/Cybersecurity).
+      name: product_id
+      required: false
+    - description: Filter by syslog severity level (1-7, where 3=Error, 4=Warning, 6=Informational).
+      name: syslog_severity
+      required: false
+    - auto: PREDEFINED
+      description: Filter by event category.
+      name: category
+      predefined:
+      - 'ALERT'
+      - 'AUDIT'
+      - 'EVENT'
+      required: false
+    - auto: PREDEFINED
+      description: Filter by event type.
+      name: type
+      predefined:
+      - 'EVENT'
+      - 'ALERT'
+      required: false
+    - description: Filter by feature name (e.g., "Alerts And Notifications", "Ransomware Recovery").
+      name: feature
+      required: false
+    - description: 'Pagination token received from a previous run to get the next page of results. IMPORTANT: When using page_token, do not pass any other filter parameters as the token already contains all filter information.'
+      name: page_token
+      required: false
+    - defaultValue: '500'
+      description: Number of events to retrieve per page (max 500).
+      name: page_size
+      required: false
+    - auto: PREDEFINED
+      defaultValue: 'false'
+      description: When true, the integration creates Cortex XSIAM events. Otherwise, they will only be displayed.
+      name: should_push_events
+      predefined:
+      - 'true'
+      - 'false'
+      required: false
+    description: Gets all events from Druva v3 Event Management API with advanced filtering capabilities. Supports pagination and can push events to XSIAM.
+    execution: false
+    name: druva-get-all-events
+    outputs:
+    - contextPath: Druva.AllEvents.events
+      description: List of retrieved events.
+      type: Unknown
+    - contextPath: Druva.AllEvents.nextPageToken
+      description: Token to use for retrieving the next page of results. Use this value as page_token parameter in the next call.
+      type: String
+    - contextPath: Druva.AllEvents.hasMore
+      description: Indicates if more events are available (true if nextPageToken is present).
+      type: Boolean
+    - contextPath: Druva.AllEvents.totalEvents
+      description: Total number of events in the current response.
+      type: Number
   dockerimage: demisto/python3:3.12.8.3296088
   isfetchevents: true
   runonce: false
