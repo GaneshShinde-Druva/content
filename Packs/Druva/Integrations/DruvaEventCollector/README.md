@@ -128,9 +128,9 @@ Gets all events from Druva v3 Event Management API with advanced filtering capab
 
 ```markdown
 ### Druva - All Events
-|id|productID|category|type|feature|syslogSeverity|timeStamp|globalID|
-|---|---|---|---|---|---|---|---|
-| 840135132 | 4097 | EVENT | Alert | Alerts And Notifications | 4 | 1761894118 | e0663cd2-1ff2-46dc-86fe-80de3bccfe74-10608 |
+|id|productID|category|type|feature|syslogSeverity|syslogFacility|timeStamp|globalID|details|
+|---|---|---|---|---|---|---|---|---|---|
+| 840135132 | 4097 | EVENT | Alert | Alerts And Notifications | 4 | 16 | 1761894118 | e0663cd2-1ff2-46dc-86fe-80de3bccfe74-10608 | Event details here |
 
 **Pagination**: More events available. Use `page_token=eyJsYXN0X2V2ZW50X2lkIjo4NDAxMzUxMzMsInBhZ2Vfc2l6ZSI6NTAwfQ==` to fetch the next page.
 

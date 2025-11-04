@@ -337,7 +337,10 @@ def druva_get_all_events_command(client: Client, args: dict[str, Any]) -> Comman
         hr = tableToMarkdown(
             hr_title,
             events,
-            headers=["id", "productID", "category", "type", "feature", "syslogSeverity", "timeStamp", "globalID"],
+            headers=[
+                "id", "productID", "category", "type", "feature",
+                "syslogSeverity", "syslogFacility", "timeStamp", "globalID", "details"
+            ],
             removeNull=True,
         )
     else:
