@@ -319,7 +319,7 @@ def druva_get_all_events_command(client: Client, args: dict[str, Any]) -> Comman
     events = response.get("events", [])
     # API returns 'nextPageToken'
     next_page_token = response.get("nextPageToken", "")
-    
+
     # If events list is empty, we've hit the last page (terminate pagination)
     # API may return nextPageToken even with empty array, but empty array means last page
     if not events:
