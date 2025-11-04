@@ -48,13 +48,11 @@ Gets all events from Druva v3 Event Management API with advanced filtering capab
 
 | **Argument Name** | **Description** | **Required** |
 | --- | --- | --- |
-| product_id | Filter by product ID (e.g., "4097" for inSync). | Optional |
+| product_id | Filter by product ID (e.g., "4097" for DCP, "8193" for inSync, "12289" for Phoenix). | Optional |
 | syslog_severity | Filter by syslog severity level (0-7, where 3=Error, 4=Warning, 6=Informational). | Optional |
 | category | Filter by event category. Possible values are: ALERT, AUDIT, EVENT. | Optional |
 | type | Filter by event type. Possible values are: EVENT, ALERT. | Optional |
 | feature | Filter by feature name (e.g., "Alerts And Notifications", "Ransomware Recovery"). | Optional |
-| global_id | Filter by global ID (for MSP customers to filter by specific organization). | Optional |
-| source | Filter by event source. | Optional |
 | page_token | Pagination token received from a previous run to get the next page of results. **IMPORTANT**: When using page_token, do not pass any other filter parameters as the token already contains all filter information. | Optional |
 | page_size | Number of events to retrieve per page (max 500). Default is 500. | Optional |
 | should_push_events | When true, the integration creates Cortex XSIAM events. Otherwise, they will only be displayed. Possible values are: true, false. Default is false. | Optional |
@@ -64,8 +62,8 @@ Gets all events from Druva v3 Event Management API with advanced filtering capab
 | **Path** | **Type** | **Description** |
 | --- | --- | --- |
 | Druva.AllEvents.events | Unknown | List of retrieved events. |
-| Druva.AllEvents.nextPageToken | String | Token to use for retrieving the next page of results. Use this value as page_token parameter in the next call. |
-| Druva.AllEvents.hasMore | Boolean | Indicates if more events are available (true if nextPageToken is present). |
+| Druva.AllEvents.nextPageToken | String | Token to use for retrieving the next page of results. Use this value as page_token parameter in the next call. Empty if no more pages available. |
+| Druva.AllEvents.hasMore | Boolean | Indicates if more events are available. False when events list is empty (last page reached) or when nextPageToken is absent. |
 | Druva.AllEvents.totalEvents | Number | Total number of events in the current response. |
 
 #### Command Examples
@@ -136,7 +134,7 @@ Gets all events from Druva v3 Event Management API with advanced filtering capab
 
 **Pagination**: More events available. Use `page_token=eyJsYXN0X2V2ZW50X2lkIjo4NDAxMzUxMzMsInBhZ2Vfc2l6ZSI6NTAwfQ==` to fetch the next page.
 
-⚠️ **Note**: When using `page_token`, do not pass other filter parameters as the token already contains all filter information.
+**Note**: When using `page_token`, do not pass other filter parameters as the token already contains all filter information.
 ```
 
 ## Additional Information
@@ -152,11 +150,14 @@ Gets all events from Druva v3 Event Management API with advanced filtering capab
 1. Start with your initial query using filters (product_id, category, etc.)
 2. If `hasMore` is true, use the `nextPageToken` value from the response
 3. When using `page_token`, **do not include any other filter parameters**
-4. Continue fetching pages until `hasMore` is false
+4. Continue fetching pages until `hasMore` is false or events list is empty
+5. **Pagination terminates automatically** when the API returns an empty events array (indicating last page reached)
 
 ### Common Product IDs
 
-- **4097**: inSync (File Backup)
+- **4097**: DCP (Data Center Protection / Cybersecurity)
+- **8193**: inSync (Endpoint Backup)
+- **12289**: Phoenix (Cloud Workloads)
 - Refer to Druva documentation for other product IDs
 
 ### Syslog Severity Levels

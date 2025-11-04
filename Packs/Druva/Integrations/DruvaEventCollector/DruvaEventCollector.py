@@ -141,7 +141,7 @@ class Client(BaseClient):
         Reference: https://developer.druva.com/reference/cybersecurity-events
 
         Args:
-            product_id: Filter by product ID (e.g., "4097" for inSync)
+            product_id: Filter by product ID (e.g., "4097" for DCP, "8193" for inSync, "12289" for Phoenix)
             syslog_severity: Filter by syslog severity level (0-7, e.g., "3" for Error)
             category: Filter by event category (e.g., "ALERT", "EVENT", "AUDIT")
             event_type: Filter by event type (e.g., "Alert", "Backup")
@@ -273,7 +273,7 @@ def druva_get_all_events_command(client: Client, args: dict[str, Any]) -> Comman
     Args:
         client: Druva client to use
         args: Command arguments from Demisto
-            - product_id: Filter by product ID (e.g., "4097" for inSync)
+            - product_id: Filter by product ID (e.g., "4097" for DCP, "8193" for inSync, "12289" for Phoenix)
             - syslog_severity: Filter by syslog severity level (0-7)
             - category: Filter by event category (e.g., ALERT, AUDIT, EVENT)
             - type: Filter by event type (e.g., Alert, Backup)
