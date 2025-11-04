@@ -113,6 +113,7 @@ script:
   subtype: python3
   type: python
 marketplaces:
+- xsoar
 - marketplacev2
 - platform
 fromversion: 8.4.0
