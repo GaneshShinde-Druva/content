@@ -40,6 +40,8 @@ There is no context output for this command.
 ***
 Gets all events from Druva v3 Event Management API with advanced filtering capabilities. Supports pagination and can push events to XSIAM.
 
+**For more filter options and detailed event information, refer to the [Druva Cybersecurity Events API Documentation](https://developer.druva.com/reference/cybersecurity-events).**
+
 #### Base Command
 
 `druva-get-all-events`
@@ -48,13 +50,13 @@ Gets all events from Druva v3 Event Management API with advanced filtering capab
 
 | **Argument Name** | **Description** | **Required** |
 | --- | --- | --- |
+| page_token | Pagination token received from a previous run to get the next page of results. **IMPORTANT**: When using page_token, do not pass any other filter parameters as the token already contains all filter information. | Optional |
+| page_size | Number of events to retrieve per page (max 500). Default is 500. | Optional |
 | product_id | Filter by product ID (e.g., "4097" for DCP, "8193" for inSync, "12289" for Phoenix). | Optional |
 | syslog_severity | Filter by syslog severity level (0-7, where 3=Error, 4=Warning, 6=Informational). | Optional |
 | category | Filter by event category. Possible values are: ALERT, AUDIT, EVENT. | Optional |
 | type | Filter by event type. Possible values are: EVENT, ALERT. | Optional |
 | feature | Filter by feature name (e.g., "Alerts And Notifications", "Ransomware Recovery"). | Optional |
-| page_token | Pagination token received from a previous run to get the next page of results. **IMPORTANT**: When using page_token, do not pass any other filter parameters as the token already contains all filter information. | Optional |
-| page_size | Number of events to retrieve per page (max 500). Default is 500. | Optional |
 | should_push_events | When true, the integration creates Cortex XSIAM events. Otherwise, they will only be displayed. Possible values are: true, false. Default is false. | Optional |
 
 #### Context Output

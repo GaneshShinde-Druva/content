@@ -47,10 +47,17 @@ script:
     - description: A string received in a previous run, marking the point in time from which we want to fetch.
       name: tracker
       required: false
-    description: Gets events from Druva API in one batch (max 500). If tracker is given, only its successive events will be fetched.
+    description: Gets inSync events from Druva API in one batch (max 500). If tracker is given, only its successive events will be fetched.
     execution: false
     name: druva-get-events
   - arguments:
+    - description: 'Pagination token received from a previous run to get the next page of results. IMPORTANT: When using page_token, do not pass any other filter parameters as the token already contains all filter information.'
+      name: page_token
+      required: false
+    - defaultValue: '500'
+      description: Number of events to retrieve per page (max 500).
+      name: page_size
+      required: false
     - description: Filter by product ID (e.g., "4097" for DCP/Cybersecurity).
       name: product_id
       required: false
@@ -75,13 +82,6 @@ script:
     - description: Filter by feature name (e.g., "Alerts And Notifications", "Ransomware Recovery").
       name: feature
       required: false
-    - description: 'Pagination token received from a previous run to get the next page of results. IMPORTANT: When using page_token, do not pass any other filter parameters as the token already contains all filter information.'
-      name: page_token
-      required: false
-    - defaultValue: '500'
-      description: Number of events to retrieve per page (max 500).
-      name: page_size
-      required: false
     - auto: PREDEFINED
       defaultValue: 'false'
       description: When true, the integration creates Cortex XSIAM events. Otherwise, they will only be displayed.
@@ -90,7 +90,7 @@ script:
       - 'true'
       - 'false'
       required: false
-    description: Gets all events from Druva v3 Event Management API with advanced filtering capabilities. Supports pagination and can push events to XSIAM.
+    description: Gets all events from Druva v3 Event Management API with advanced filtering capabilities. Supports pagination and can push events to XSIAM. For more filter options and event details, refer to https://developer.druva.com/reference/cybersecurity-events
     execution: false
     name: druva-get-all-events
     outputs:

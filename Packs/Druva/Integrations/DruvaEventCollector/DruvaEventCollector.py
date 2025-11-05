@@ -347,14 +347,18 @@ def druva_get_all_events_command(client: Client, args: dict[str, Any]) -> Comman
         hr = f"### {hr_title}\nNo events found with the specified filters."
 
     # Add pagination info to human readable
+    events_count = len(events)
     if has_more:
-        hr += f"\n\n**Pagination**: More events available. Use `page_token={next_page_token}` to fetch the next page."
+        hr += (
+            f"\n\n**Pagination**: Retrieved {events_count} events. More events available. "
+            f"Use `page_token={next_page_token}` to fetch the next page."
+        )
         hr += (
             "\n\n **Note**: When using `page_token`, do not pass other filter parameters "
             "as the token already contains all filter information."
         )
     else:
-        hr += "\n\n**Pagination**: No more events available."
+        hr += f"\n\n**Pagination**: Retrieved {events_count} events. No more events available."
 
     # Prepare context output
     context_output = {
